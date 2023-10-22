@@ -1,3 +1,3 @@
-liwolf's personal blog
-writen by jekyll plainwhite theme
-foked from https://github.com/samarsault/plainwhite-jekyll
+liwolf's personal blog <br>
+writen by jekyll plainwhite theme <br>
+foked from https://github.com/samarsault/plainwhite-jekyll <br>
