@@ -56,3 +56,4 @@ remote-theme: plainwhite
 plugins:
   - jekyll-seo-tag
 #  - jekyll-feed
+# /usr/local/Cellar/ruby@3.0/3.0.6_1/bin
