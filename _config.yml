@@ -19,13 +19,17 @@ plainwhite:
   portfolio_image: "assets/portfolio.png" # the path from the base directory of the site to the image to display (no / at the start)
   html_lang: "en" # set the lang attribute of the <html> tag for the pages. See here for a list of codes: https://www.w3schools.com/tags/ref_country_codes.asp
   condensed_mobile:
-    #- home
+    - home
     - page
     - post
   # generate social links in footer
+  # navigation: 
+  #   - title: My Mood
+  #     url: /my-mood
   social_links:
     # twitter: samarsault
     github:  xiaohuihuiL
+    bilibili: 397704847/fans/follow?spm_id_from=333.999.0.0
     # linkedIn: in/samarsault
     #dribbble: jekyll
     #flickr:   jekyll
@@ -56,4 +60,5 @@ remote-theme: plainwhite
 plugins:
   - jekyll-seo-tag
 #  - jekyll-feed
-# /usr/local/Cellar/ruby@3.0/3.0.6_1/bin
+# ./usr/local/Cellar/ruby@3.0/3.0.6_1/bin/bundle
+# bundle exec jekyll serve
