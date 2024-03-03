@@ -22,10 +22,11 @@ plainwhite:
     - home
     - page
     - post
+    - moods
   # generate social links in footer
-  # navigation: 
-  #   - title: My Mood
-  #     url: /my-mood
+  navigation: 
+    - title: My Mood
+      url: /moods
   social_links:
     # twitter: samarsault
     github:  xiaohuihuiL

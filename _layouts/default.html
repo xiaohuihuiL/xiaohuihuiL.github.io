@@ -169,7 +169,8 @@
       {% endcapture %}
       {{ footer }}
     </section>
-    <section class="content">
+    <section class="content"> 
+      {%- include navigation.html-%}
       {{ content }}
     </section>
     <footer class="{{condensed_class}}">

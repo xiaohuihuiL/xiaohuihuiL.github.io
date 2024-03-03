@@ -1,9 +1,9 @@
 ---
 layout: post
-title:  "Notes of User-Center"
-date:   2023-10-22 13:06:00 +8
-categories: Posts
-tags: Python linux
+title:  "Notes of User-Center Mood"
+date:   2024-1-22 13:06:00 +8
+categories: Moods
+tag: City
 ---
 # 用户中心笔记
 
