@@ -1,11 +1,16 @@
 ---
 layout: post
-title:  "Notes of User-Center Mood"
+title: 用户中心笔记
+subtitle: "Notes of User-Center Mood"
 date:   2024-1-22 13:06:00 +8
 categories: Moods
 tag: City
+excerpt_separator: <!--more-->
+
 ---
-# 用户中心笔记
+ 用户中心笔记
+
+ <!--more-->
 
 ### 1.初始化
 
@@ -222,8 +227,6 @@ isDelete(是否删除) tinyint default 0
 ### 6.新建文件夹
 
 
-
-<img src="/Users/wuhuihui/Desktop/ssm/1.png" alt="1" style="zoom:50%;" />
 
 ### 7.mybatisX generator生成相关实体类，xml以及接口
 

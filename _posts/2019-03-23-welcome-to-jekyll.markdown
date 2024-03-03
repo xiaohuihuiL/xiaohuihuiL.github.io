@@ -1,11 +1,16 @@
 ---
 layout: post
-title:  "Notes of User-Center"
+title: "用户中心笔记"
+subtitle:  "Notes of User-Center"
 date:   2023-10-22 13:06:00 +8
 categories: Posts
 tags: Python linux
+excerpt_separator: <!--more-->
 ---
-# 用户中心笔记
+ 用户中心笔记
+ 鱼皮用户中心项目笔记记录
+
+ <!--more-->
 
 ### 1.初始化
 
@@ -222,8 +227,6 @@ isDelete(是否删除) tinyint default 0
 ### 6.新建文件夹
 
 
-
-<img src="/Users/wuhuihui/Desktop/ssm/1.png" alt="1" style="zoom:50%;" />
 
 ### 7.mybatisX generator生成相关实体类，xml以及接口
 

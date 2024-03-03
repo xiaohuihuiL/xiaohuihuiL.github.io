@@ -1,0 +1,435 @@
+---
+layout: post
+title: redis笔记
+subtitle: "Notes of redis"
+date:   2024-03-03 11:06:00 +8
+categories: Posts
+tags: Java Redis
+excerpt_separator: <!--more-->
+---
+redis重点知识总结
+
+<!--more-->
+
+### 配置
+
+```sbash
+# 监听的地址，默认是 127.0.0.1 只能本地访问；修改为 0.0.0.0，可以在任意 IP 访问。
+bind 0.0.0.0
+
+# 守护进程
+daemonize yes
+
+# 密码
+requirepass 123456
+```
+
+### springboot配置
+
+```yaml
+spring:
+  redis:
+    host: 127.0.0.1 #Redis服务器地址
+    port: 6379 #Redis端口号
+    timeout: 300 # 连接超时时间（毫秒）
+    database: 0 # Redis数据库索引（默认为0）
+    password: 123456 # Redis 服务器密码，默认为空。生产中，一定要设置 Redis 密码！
+    jedis:
+      pool:
+        max-active: 8 # 连接池最大连接数，默认为 8 。使用负数表示没有限制。
+        max-idle: 8 # 默认连接数最大空闲的连接数，默认为 8 。使用负数表示没有限制。
+        min-idle: 0 # 默认连接池最小空闲的连接数，默认为 0 。允许设置 0 和 正数。
+        max-wait: -1 # 连接池最大阻塞等待时间，单位：毫秒。默认为 -1 ，表示不限制。
+```
+
+
+
+### 启动
+
+```bash
+# 在bin目录下
+redis-server ../redis.conf
+
+redis-cli -a uii084929
+```
+
+### 通用命令
+
+- KEYS patthern ：查看所有符合的 key；
+- DEL key [key ...] ：删除一个 或 多个 指定的key；
+- EXISTS key ：判断某个 key 是否存在；
+- EXPIRE key seconds ：给一个 key 设置有效时间，超时后该 key 会被自动删除；
+- TTL key ：查看一个 key 的剩余有效时间；
+- TYPE key ：查看某个 key 所存储的 value 的类型；
+- RENAME key newkey ：为某个 key 重命名；
+
+## 五大基本数据类型
+
+### String
+
+String 的三种类型：字符串、int、float。
+
+- STRLEN key ：获取某个 key 存储的长度；
+- SET key value ：添加 或 修改一个键值对；
+- GET key ：获取某个 key 的 value；
+- MSET key value [key value ...] ：批量 SET；
+- MGET key [key ...] ：批量 GET；
+- INCR key ：一个整型的 key 自增 1；
+- INCRBY key increment ：一个整型的 key 自增 increment；
+- INCRBYFLOAT key increment ：让一个浮点型的 key 自增；
+- SETNX key value ：添加一个 String 类型的键值对，前提是这个 key 不存在；
+- SETEX key seconds value ：添加一个 String 类型的键值对，并且指定有效时间。
+
+![](/assets/images/1001.png)
+
+对应java api
+
+```java
+public void redisString(){
+        //存入数据
+        stringRedisTemplate.opsForValue().set("key","value");
+        //存入数据设置缓存时间 TimeUnit.SECONDS 单位:秒
+        stringRedisTemplate.opsForValue().set("key","value",1200, TimeUnit.SECONDS);
+        //如果不存在则插入，返回true为插入成功,false失败
+        Boolean absent = stringRedisTemplate.opsForValue().setIfAbsent("key", "value");
+
+        Map<String,String> map = new HashMap<>();
+        map.put("key1", "value1");
+        map.put("key2", "value2");
+        //批量插入，key值存在会覆盖原值
+        stringRedisTemplate.opsForValue().multiSet(map);
+
+        //批量插入，如果里面的所有key都不存在，则全部插入，返回true，如果其中一个在redis中已存在，全不插入，返回false
+        Boolean absent1 = stringRedisTemplate.opsForValue().multiSetIfAbsent(map);
+
+        //获取值,key不存在返回null
+        Object object = stringRedisTemplate.opsForValue().get("key");
+        //批量获取，key不存在返回null
+        List<String> list = stringRedisTemplate.opsForValue().multiGet(Arrays.asList("key1", "key2"));
+
+        //获取指定字符串的长度
+        Long size = stringRedisTemplate.opsForValue().size("key");
+        //原有的值基础上新增字符串到末尾 返回长度
+        Integer integer = stringRedisTemplate.opsForValue().append("key", "lemon");
+
+        //获取原来key键对应的值并重新赋新值 返回原来值
+        String str =stringRedisTemplate.opsForValue().getAndSet("key","lemon");
+
+        //获取指定key的值进行减1，如果value不是integer类型，会抛异常，如果key不存在会创建一个，默认value为0
+        stringRedisTemplate.opsForValue().decrement("keyint");
+        //获取指定key的值进行加1，如果value不是integer类型，会抛异常，如果key不存在会创建一个，默认value为0
+        stringRedisTemplate.opsForValue().increment("keyint");
+        //删除指定key,成功返回true，否则false
+        Boolean delete = stringRedisTemplate.opsForValue().getOperations().delete("key");
+        //删除多个key，返回删除key的个数
+        Long deleteL = stringRedisTemplate.opsForValue().getOperations().delete(Arrays.asList("key1", "key2"));
+    }
+
+```
+
+### Hash
+
+- HSET key field value [field value ...] ：添加 或 修改 HashKey 的 field 的值；
+- HMSET key field value [field value ...] ：HSET 和 HMSET 都可以批量添加 或 修改 HashKey 的 field 的值；
+- HSETNX key field value ：添加一个 HashKey 的 field 值，前提是这个 field 不存在。
+
+- `HGET key field`：获取 HashKey 的 field 的值；
+- `HMGET key field [field ...]` ：批量获取 HashKey 的 field 的值。
+- `HGETALL key` ：获取一个 HashKey 中的所有 field 和 value；
+- `HKEYS key` ：获取指定 HashKey 中的所有 field；
+- `HVALS key` ：获取指定 HashKey 中的所有 field 的 value。
+- `HINCRBY key field increment` ：一个整型的 HashKey 的 field 的值自增 increment。
+- HDEL key field [field ...] ：批量删除 HashKey 的 field 和 field 对应的 value；
+
+![](/assets/images/1005.png)
+
+![](/assets/images/1002.png)
+
+Java api
+
+```java
+ public void redisHash(){
+        //新增hashmap值
+        stringRedisTemplate.opsForHash().put("key","field","value");
+        //以map集合的形式添加键值对
+        Map<String,String> map = new HashMap<>();
+        map.put("field2","value2");
+        map.put("field3","value3");
+        stringRedisTemplate.opsForHash().putAll("key",map);
+        //如果key存在，在key中可以添加不存在的的键值对，
+        //如果key不存在，则新增一个key，同时将键值对添加到该key。添加成功返回true否则返回false
+        Boolean absent = stringRedisTemplate.opsForHash().putIfAbsent("key", "field", "value1");
+         //获取key中的所有field
+        Set<Object> keys = stringRedisTemplate.opsForHash().keys("key");
+        //获取指定key中的所有value
+        List<Object> values = stringRedisTemplate.opsForHash().values("key");
+        //获取key中的键值对
+        Map<Object, Object> entries = stringRedisTemplate.opsForHash().entries("key");
+        //获取key中的指定field是否有值,如果存在则获取值，没有则返回null。
+        Object value = stringRedisTemplate.opsForHash().get("key", "field");
+        //获取key的长度
+        Long size = stringRedisTemplate.opsForHash().size("key");
+        //使key中的field以long值的大小进行自增长。值必须为Integer类型,否则异常
+        Long increment = stringRedisTemplate.opsForHash().increment("key", "field", 1);
+        //以集合的方式获取key中的value。
+        List<Object> valuelist= stringRedisTemplate.opsForHash().multiGet("key", Arrays.asList("field", "field"));
+        // 删除key中的键值对，可以传入多个参数，删除多个键值对。返回删除成功数量
+        Long delete = stringRedisTemplate.opsForHash().delete("key", "field1", "field2");
+    }
+
+```
+
+### List
+
+LPUSH key element [element ...] ：向列表左侧（头）插入一个或多个元素；
+LPOP key [count] ：移除并返回左侧（头）的第一个元素；
+RPUSH key element [element ...] ：向列表右侧（尾）插入一个或多个元素；
+RPOP key ：移除并返回右侧（尾）第一个元素。
+`LRANGE key start end` ：返回指定下标范围内的所有元素。
+
+`LTRIM key start end` ：只保留指定范围内的元素，其他的删除。
+
+`BLPOP kye [key ...] timeout` 和 `BRPOP key [key ...] timeout`：与 LPOP 和 RPOP 类似，但是在没有元素时等待指定时间，而不是直接返回 nil。
+
+`LINDEX key index` ：返回指定下标的值；
+
+`LLEN key` ：返回列表的元素个数；
+
+![](/assets/images/1003.png)
+
+Java api
+
+```java
+public void redisList(){
+        //在key左边添加元素值。如果key不存在会新建，添加成功返回添加后的总个数
+        Long leftPush = stringRedisTemplate.opsForList().leftPush("key","value");
+        //向左边批量添加参数元素，如果key不存在会新建，添加成功返回添加后的总个数
+        Long pushAll = stringRedisTemplate.opsForList().leftPushAll("key", "value1", "value2", "value3");
+        //向集合最右边添加元素。如果key不存在会新建，添加成功返回添加后的总个数
+        Long rightPush = stringRedisTemplate.opsForList().rightPush("key", "value4");
+        //向右边批量添加参数元素，如果key不存在会新建，添加成功返回添加后的总个数
+        Long pushAll2 = stringRedisTemplate.opsForList().rightPushAll("key", "value5", "value6", "value7");
+        //向已存在的集合中添加元素。返回集合总元素个数 左边
+        Long leftL = stringRedisTemplate.opsForList().leftPushIfPresent("key", "value");
+        //向已存在的集合中添加元素。返回集合总元素个数 右边
+        Long rightL = stringRedisTemplate.opsForList().rightPushIfPresent("key", "value");
+        //获取集合长度
+        Long size = stringRedisTemplate.opsForList().size("key");
+        //移除集合中的左边第一个元素。返回删除的元素，如果元素为空，该集合会自动删除
+        String leftPop = stringRedisTemplate.opsForList().leftPop("key");
+        //移除集合中右边的元素。返回删除的元素，如果元素为空，该集合会自动删除
+        String rightPop = stringRedisTemplate.opsForList().rightPop("key");
+        //移除集合中左边的元素在等待的时间里，如果超过等待的时间仍没有元素则退出。
+        String leftstr = stringRedisTemplate.opsForList().leftPop("key", 10, TimeUnit.SECONDS);
+        //移除集合中右边的元素在等待的时间里，如果超过等待的时间仍没有元素则退出。
+        String rightstr = stringRedisTemplate.opsForList().rightPop("key", 10, TimeUnit.SECONDS);
+        //移除第一个集合右边的一个元素，插入第二个集合左边插入这个元素
+        String s = stringRedisTemplate.opsForList().rightPopAndLeftPush("key", "key1");
+        //在集合的指定位置插入元素,如果指定位置已有元素，则覆盖，没有则新增，超过集合下标+n则会报错。
+        stringRedisTemplate.opsForList().set("key", 2, "value11");
+        //从存储在键中的列表中删除等于值的元素的第一个计数事件。count> 0：删除等于从左到右移动的值的第一个元素；
+        //count< 0：删除等于从右到左移动的值的第一个元素；count = 0：删除等于value的所有元素
+        Long remove = stringRedisTemplate.opsForList().remove("key", 2, "value12");
+        //截取集合元素长度，保留长度内的数据。
+        stringRedisTemplate.opsForList().trim("key", 0, 3);
+        //获取集合指定位置的值。
+        Object listValue = stringRedisTemplate.opsForList().index("key", 3);
+        //获取指定区间的值
+        List<String> list = stringRedisTemplate.opsForList().range("key", 0, -1);
+        //删除指定集合,返回true删除成功
+        Boolean delete = stringRedisTemplate.opsForList().getOperations().delete("key");
+    }
+
+```
+
+### set
+
+SADD key member [member ...] ：向 Set 中添加一个或多个元素；
+SMEMBERS key ：获取指定 Set 中的所有元素；
+SISMEMBER key member ：判断 Set 中是否存在指定元素；
+SCARD key ：返回 Set 中的元素个数；
+SREM key member [member ...] ：移除 Set 中的指定元素；
+
+`SINTER key [key ...]` ：求 n 个 key 间的交集；
+
+`SDIFF key [key ...]` ：求 n 个 key 间的差集；
+
+`SUNION key [key ...]` ：求 n 个 key 间的并集。
+
+![](/assets/images/1004.png)
+
+java api
+
+```java
+  public void redisSet(){
+
+        //向key中批量添加值。返回添加的数量
+        Long add = stringRedisTemplate.opsForSet().add("set", "a", "b", "c");
+        //获取key的值
+        Set<String> set = stringRedisTemplate.opsForSet().members("set");
+        //获取key中值得长度
+        Long size = stringRedisTemplate.opsForSet().size("set");
+        //随机获取key中的某个元素
+        String member = stringRedisTemplate.opsForSet().randomMember("set");
+        //随机获取key中指定个数的元素
+        List<String> members = stringRedisTemplate.opsForSet().randomMembers("set", 2);
+        //检查给定的元素是否在key中,true为存在
+        Boolean member1 = stringRedisTemplate.opsForSet().isMember("set", "b");
+        //转义key的元素值到另一个key中
+        Boolean move = stringRedisTemplate.opsForSet().move("set", "b", "set1");
+        //弹出key中的元素。当元素全部弹完,key也会删除
+        String pop = stringRedisTemplate.opsForSet().pop("set");
+        //批量删除key中的元素,返回删除的数量
+        Long remove = stringRedisTemplate.opsForSet().remove("set1", "b");
+        //通过集合求差值。
+        Set<String> difference = stringRedisTemplate.opsForSet().difference("set", "set1");
+        //将求出来的差值元素保存
+        Long aLong = stringRedisTemplate.opsForSet().differenceAndStore("set", "set1", "set2");
+        //获取去重的随机元素
+        Set<String> set1 = stringRedisTemplate.opsForSet().distinctRandomMembers("set", 2);
+        //获取两个key中的交集
+        Set<String> intersect = stringRedisTemplate.opsForSet().intersect("set", "set1");
+        //获取2个key交集后保存到最后一个key上。
+        Long aLong1 = stringRedisTemplate.opsForSet().intersectAndStore("set", "set1", "set2");
+        //获取两个key的合集
+        Set<String> union = stringRedisTemplate.opsForSet().union("set", "set1");
+        //获取两个key合集后保存到另一个key中
+        Long aLong2 = stringRedisTemplate.opsForSet().unionAndStore("set", "set1", "set2");
+    }
+
+```
+
+### zset(sorted set)
+
+ZADD key [score member ...] ：以 score 为权重向 SortedSet 中添加一个或多个元素，如果存在则更新 score；
+ZREM key member [member ...] ：删除 SortedSet 中的指定元素；
+ZCARD key ：返回 SortedSet 中的元素个数；
+ZSCORE key member ：获取 SortedSet 中指定元素的 score 值。
+`ZRANK key member` ：获取 SortedSet 中指定元素的排名（按照 score 升序）
+
+- `ZCOUNT key min max` ：统计 score 的值在给定范围内的元素个数；
+- `ZINCRBY key increment member` ：让 SortedSet 中的指定元素自增 increment。
+- `ZRANGE key min max` ：按照 score 排序后，获取 **指定排名范围** 内的元素。
+- `ZRANGEBYSCORE key min max` ：按照 score 排序后，获取 **指定 score 范围** 内的元素。
+- `ZINTER numberKeys key [key ...] ｜ ZDIFF numberKeys key [key ...] ｜ ZUNION numberKeys key [key ...]` ：求交集、差集、并集。
+- ![](/assets/images/1006.png)
+
+java api
+
+```java
+ public void redisZSet(){
+
+        //添加元素到变量中同时指定元素的分值。
+        Boolean add = stringRedisTemplate.opsForZSet().add("zset", "a", 1);
+        //通过TypedTuple方式新增数据。
+        ZSetOperations.TypedTuple<String> typedTuple1 = new DefaultTypedTuple<>("b",2.0);
+        ZSetOperations.TypedTuple<String> typedTuple2 = new DefaultTypedTuple<>("c",3.0);
+        ZSetOperations.TypedTuple<String> typedTuple3 = new DefaultTypedTuple<>("d",4.0);
+        Set<ZSetOperations.TypedTuple<String>> typedTupleSet = new HashSet<>();
+        typedTupleSet.add(typedTuple1);
+        typedTupleSet.add(typedTuple2);
+        typedTupleSet.add(typedTuple3);
+        Long zset = stringRedisTemplate.opsForZSet().add("zset", typedTupleSet);
+        //获取指定区间的元素
+        Set<String> zset1 = stringRedisTemplate.opsForZSet().range("zset", 0, -1);
+        //于获取满足非score的排序取值。这个排序只有在有相同分数的情况下才能使用，如果有不同的分数则返回值不确定。
+        Set<String> rangeByLex = stringRedisTemplate.opsForZSet().rangeByLex("zset",
+                RedisZSetCommands.Range.range().lt("c"));
+        //用于获取满足非score的设置下标开始的长度排序取值。
+        Set<String> zset2 = stringRedisTemplate.opsForZSet().rangeByLex("zset", RedisZSetCommands.Range.range().lt("c"),
+                RedisZSetCommands.Limit.limit().offset(1).count(2));
+        //根据设置的score获取区间值。
+        Set<String> zset3 = stringRedisTemplate.opsForZSet().rangeByScore("zset", 1, 3);
+        //获取RedisZSetCommands.Tuples的区间值
+        Set<ZSetOperations.TypedTuple<String>> zset4 = stringRedisTemplate.opsForZSet().rangeWithScores("zset", 1, 3);
+       /* assert zset != null;
+        for (ZSetOperations.TypedTuple<String> next : zset) {
+            String value = next.getValue();
+            Double score = next.getScore();
+            System.out.println(value + "-->" + score);
+        }*/
+       //获取区间值的个数。
+        Long zsetCount = stringRedisTemplate.opsForZSet().count("zset", 1, 3);
+        //获取变量中指定元素的索引,下标开始为0
+        Long rank = stringRedisTemplate.opsForZSet().rank("zset", "a");
+        //匹配获取键值对，ScanOptions.NONE为获取全部键值对；
+        // ScanOptions.scanOptions().match("C").build()匹配获取键位map1的键值对,不能模糊匹配。
+        Cursor<ZSetOperations.TypedTuple<String>> zset6 = stringRedisTemplate.opsForZSet().scan("zset", ScanOptions.NONE);
+       /* while (zset6.hasNext()) {
+            ZSetOperations.TypedTuple<String> next = zset6.next();
+            System.out.println(next.getValue() + "-->" + next.getScore());
+        }*/
+        //获取指定元素的分值
+        Double score = stringRedisTemplate.opsForZSet().score("zset", "a");
+        //获取变量中元素的个数
+        Long zset7 = stringRedisTemplate.opsForZSet().zCard("zset");
+        //修改变量中元素的分值
+        Double score1 = stringRedisTemplate.opsForZSet().incrementScore("zset", "a", 2);
+        //索引倒序排列指定区间的元素
+        Set<String> zset8 = stringRedisTemplate.opsForZSet().reverseRange("zset", 1, 3);
+        //倒序排列指定分值区间的元素
+        Set<String> zset9 = stringRedisTemplate.opsForZSet().reverseRangeByScore("zset", 1, 3);
+        //倒序排序获取RedisZSetCommands.Tuples的分值区间值
+        Set<String> zset10 = stringRedisTemplate.opsForZSet().reverseRangeByScore("zset", 1, 3, 1, 2);
+        //倒序排序获取RedisZSetCommands.Tuples的分值区间值。
+        Set<ZSetOperations.TypedTuple<String>> zset11 = stringRedisTemplate.opsForZSet().reverseRangeByScoreWithScores("zset", 1, 5);
+        /*assert zset != null;
+        zset.iterator().forEachRemaining(e-> System.out.println(e.getValue() + "--->" + e.getScore()));*/
+        //获取倒序排列的索引值
+        Long aLong = stringRedisTemplate.opsForZSet().reverseRank("zset", "a");
+        //获取2个变量的交集存放到第3个变量里面。
+        Long aLong1 = stringRedisTemplate.opsForZSet().intersectAndStore("zset", "zset1", "zset2");
+        //获取2个变量的合集存放到第3个变量里面。 返回操作的数量
+        Long aLong3 = stringRedisTemplate.opsForZSet().unionAndStore("zset", "zset1", "zset2");
+        //批量移除元素根据元素值。返回删除的元素数量
+        Long remove = stringRedisTemplate.opsForZSet().remove("zset", "a", "b");
+        //根据分值移除区间元素。返回删除的数量
+        Long zset12 = stringRedisTemplate.opsForZSet().removeRangeByScore("zset", 1, 3);
+        //据索引值移除区间元素。返回移除的元素集合
+        Set<String> zset13 = stringRedisTemplate.opsForZSet().reverseRange("zset", 0, 4);
+        
+    }
+```
+
+## redisTemplate
+
+![](/assets/images/1008.png)
+
+## 不常用数据类型
+
+### geo
+
+`GEOADD key longitude latitude member [longitude latitude member ...]`：添加一个地理空间信息，包含：经度（longitude）、纬度（latitude）、值（member）；
+
+`GEODIST key member1 member2 [unit]`：计算指定的两个点之间的距离并返回；
+
+`GEOHASH key member [member ...]`：将指定 member 的坐标转为 hash 字符串形式并返回；
+
+`GEOPOS key member [member ...]`：返回指定 member 的坐标；
+
+GEORADIUS key longitude latitude radius [unit] [WITHCOORD] [WITHDIST] [WITHHASH] [COUNT count] [ASC|DESC]：指定圆心、半径，找到该圆范围内包含的所有 member，并按照与圆心的距离排序后返回（6.2 后弃用）；
+
+
+GEOSEARCH key [FROMMEMBER member] [FROMLONLAT longitude latitude] [BYRADIUS radius [unit]] [BYBOX width height [unit]] [ASC|DESC] [COUNT count [ANY]] [WITHCOORD] [WITHDIST] [WITHHASH]：在指定范围内搜索 member，并按照与指定之间的距离顺序后返回，范围内可以是圆形或矩形（6.2 新功能）；
+
+`GEOSEARCHSTORE `：与 `GEOSEARCH` 功能一致，不过可以把结果存储到一个指定的 Key（6.2 新功能）
+
+### BitMap
+
+- `SETBIT key offset value` ：向指定位置 `offset` 存入一个 0 或 1；
+- `GETBIT key offset` ：获取指定位置 `offset` 的 Bit 值；
+- `BITCOUNT key [start end]` ：统计 BitMap 中值为 1 的 Bit 位的数量；
+- `BITFIELD key [GET type offset] `：操作（查询、修改、自增） BitMap 中 Bit 数组中指定位置 `offset` 的值；
+  - `type` ：`u` 为无符号，`i` 为有符号；符号后的数字为
+- `BITPOS key bit [start] [end]` ：查找 Bit 数组中指定范围内的第一个 0 或 1 出现的位置
+
+Java api
+
+```java
+stringRedisTemplate.opsForValue().setBit(key, offset , true);
+List<Long> result = stringRedisTemplate.opsForValue().bitField(
+            key,
+       BitFieldSubCommands.create().get(BitFieldSubCommands.BitFieldType.unsigned(dayOfMonth)).valueAt(0)
+    );
+```
+
